@@ -1,48 +1,27 @@
-import prompts, { Choice } from 'prompts';
 import { Budget } from './entities/Budget';
-import { Tax } from './entities/Tax';
+import { COFINS } from './entities/COFINS';
+import { ICMS } from './entities/ICMS';
+import { ISS } from './entities/ISS';
+import { Item } from './entities/Item';
+import { PIS } from './entities/PIS';
 import { formatCurrency } from './utils/formatCurrency';
-
-const availableTaxes = [
-  new Tax({type: 'ICMS', aliquot: 17}),
-  new Tax({type: 'ISS', aliquot: 5})
-];
-
-function getTax(taxes: string[]) {
-  return availableTaxes.filter((tax) => taxes.includes(tax.type));
-}
-
-prompts.inject([ 50, getTax(['ICMS']) ]);
 
 async function app() {
   console.clear();
   console.log('🚀 CALCULADORA DE ORÇAMENTOS');
-  const res = await prompts([
-    {
-      type: 'number',
-      name: 'budgetValue',
-      message: 'Valor do orçamento: ',
-      min: 0,
-      validate: (value) => {
-        if (value <= 0) {
-          return 'Valor deve ser maior que zero.';
-        }
 
-        return true;
-      }
-    },
-    {
-      type: 'multiselect',
-      name: 'taxes',
-      message: 'Impostos',
-      choices: availableTaxes.map((tax): Choice => ({title: `${tax.type} - ${tax.aliquot}%`, value: tax})),
-    }
-  ]);
-
-  const budget = new Budget({value: res.budgetValue, tax: res.taxes});
+  const budget = new Budget({});
+  budget.addItem(new Item({ desc: 'Teste', value: 10 }));
+  budget.addItem(new Item({ desc: 'Teste 1', value: 20 }));
+  budget.addItem(new Item({ desc: 'Teste 2', value: 30 }));
+  budget.addItem(new Item({ desc: 'Teste 3', value: 40 }));
+  budget.addItem(new Item({ desc: 'Teste 4', value: 50 }));
+  budget.addTax(new ICMS({ aliquot: 15 }));
+  budget.addTax(new COFINS());
+  budget.addTax(new ISS({ aliquot: 3.5 }));
+  budget.addTax(new PIS({ aliquot: 2.1 }));
 
   console.log(`💸 Valor Final: ${formatCurrency(budget.totalValue)}`);
 }
 
 app();
-
