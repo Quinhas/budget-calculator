@@ -1,4 +1,4 @@
-import { Replace } from 'src/utils/Replace';
+import { formatCurrency } from '../utils/formatCurrency';
 import { Item } from './Item';
 import { Tax } from './Tax';
 
@@ -8,18 +8,17 @@ interface BudgetProps {
   tax: Tax[];
 }
 
+interface BudgetDTO {
+  items?: Item[];
+  tax?: Tax[];
+}
+
 export class Budget {
   private readonly props: BudgetProps;
 
-  constructor(
-    props: Replace<BudgetProps, { value?: number; items?: Item[]; tax?: Tax[] }>
-  ) {
-    if (props.value) {
-      this.validateValue(props.value);
-    }
+  constructor(props: BudgetDTO) {
     this.props = {
-      ...props,
-      value: props.value ?? 0,
+      value: 0,
       items: props.items ?? [],
       tax: props.tax ?? [],
     };
@@ -27,17 +26,6 @@ export class Budget {
 
   public get value() {
     return this.props.value;
-  }
-
-  public set value(value: number) {
-    this.validateValue(value);
-    this.props.value = value;
-  }
-
-  private validateValue(value: number) {
-    if (isNaN(value)) {
-      throw new Error('Invalid value.');
-    }
   }
 
   public addItem(item: Item) {
@@ -49,11 +37,36 @@ export class Budget {
     this.props.tax.push(tax);
   }
 
-  public get totalValue() {
-    const taxesValue = this.props.tax.reduce((acc, tax) => {
-      return acc + tax.calculateTaxValue({ budgetValue: this.props.value });
-    }, 0);
+  public get totalValue(): number {
+    return this.value + this.calculateTotalTaxes();
+  }
 
-    return this.props.value + taxesValue;
+  private calculateTotalTaxes() {
+    return this.props.tax.reduce(
+      (acc, tax) =>
+        acc +
+        tax.calculateTaxValue({
+          budgetValue: this.value,
+        }),
+      0
+    );
+  }
+
+  public printTaxes() {
+    this.props.tax.map((tax) => {
+      console.log(
+        `🟡 ${tax.type}: ${formatCurrency(
+          tax.calculateTaxValue({
+            budgetValue: this.value,
+          })
+        )}`
+      );
+    });
+  }
+
+  public printItems() {
+    this.props.items.map((item) => {
+      console.log(`🔵 ${item.desc}: ${formatCurrency(item.value)}`);
+    });
   }
 }
