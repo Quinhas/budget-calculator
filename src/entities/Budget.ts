@@ -1,16 +1,19 @@
 import { formatCurrency } from '../utils/formatCurrency';
+import { Discount, DiscountType } from './Discount';
 import { Item } from './Item';
 import { Tax } from './Tax';
 
 interface BudgetProps {
   value: number;
   items: Item[];
-  tax: Tax[];
+  taxes: Tax[];
+  discounts: Discount[];
 }
 
 interface BudgetDTO {
   items?: Item[];
-  tax?: Tax[];
+  taxes?: Tax[];
+  discounts?: Discount[];
 }
 
 export class Budget {
@@ -20,7 +23,8 @@ export class Budget {
     this.props = {
       value: 0,
       items: props.items ?? [],
-      tax: props.tax ?? [],
+      taxes: props.taxes ?? [],
+      discounts: props.discounts ?? [],
     };
   }
 
@@ -34,15 +38,29 @@ export class Budget {
   }
 
   public addTax(tax: Tax) {
-    this.props.tax.push(tax);
+    this.props.taxes.push(tax);
+  }
+
+  public addDiscount(discount: Discount) {
+    this.props.discounts.push(discount);
   }
 
   public get totalValue(): number {
-    return this.value + this.calculateTotalTaxes();
+    this.checkDiscount();
+    const totalValue =
+      this.value + this.calculateTotalTaxes() - this.calculateTotalDiscounts();
+    console.log();
+    this.printItems();
+    console.log();
+    this.printTaxes();
+    console.log();
+    this.printDiscounts();
+    console.log();
+    return totalValue;
   }
 
   private calculateTotalTaxes() {
-    return this.props.tax.reduce(
+    return this.props.taxes.reduce(
       (acc, tax) =>
         acc +
         tax.calculateTaxValue({
@@ -52,8 +70,40 @@ export class Budget {
     );
   }
 
-  public printTaxes() {
-    this.props.tax.map((tax) => {
+  private calculateTotalDiscounts() {
+    return this.props.discounts.reduce(
+      (acc, discount) =>
+        acc +
+        discount.calculateDiscountValue({
+          budgetValue: this.value,
+        }),
+      0
+    );
+  }
+
+  private checkDiscount() {
+    if (this.props.items.length > 5) {
+      const discount = new Discount({
+        type: DiscountType.PERCENTAGE,
+        value: 10,
+      });
+      this.addDiscount(discount);
+      return;
+    }
+
+    if (this.props.value > 500) {
+      const discount = new Discount({
+        type: DiscountType.PERCENTAGE,
+        value: 7,
+      });
+      this.addDiscount(discount);
+      return;
+    }
+  }
+
+  private printTaxes() {
+    console.log('🟡 IMPOSTOS');
+    this.props.taxes.map((tax) => {
       console.log(
         `🟡 ${tax.type}: ${formatCurrency(
           tax.calculateTaxValue({
@@ -64,9 +114,26 @@ export class Budget {
     });
   }
 
-  public printItems() {
+  private printItems() {
+    console.log('🔵 ITEMS');
     this.props.items.map((item) => {
       console.log(`🔵 ${item.desc}: ${formatCurrency(item.value)}`);
+    });
+  }
+
+  private printDiscounts() {
+    console.log('🟢 DESCONTOS');
+    this.props.discounts.map((discount) => {
+      if (discount.type === DiscountType.PERCENTAGE) {
+        console.log(
+          `🟢 Desconto de ${discount.value}%: ${formatCurrency(
+            discount.calculateDiscountValue({ budgetValue: this.value })
+          )}`
+        );
+        return;
+      }
+
+      console.log(`🟢 Desconto de ${formatCurrency(discount.value)}`);
     });
   }
 }
