@@ -1,4 +1,6 @@
 import { formatCurrency } from '../utils/formatCurrency';
+import { BudgetStatus } from './BudgetStatus/BudgetStatus';
+import { Pending } from './BudgetStatus/Pending';
 import { Discount, DiscountType } from './Discount';
 import { Item } from './Item';
 import { Tax } from './Tax';
@@ -8,6 +10,7 @@ interface BudgetProps {
   items: Item[];
   taxes: Tax[];
   discounts: Discount[];
+  status: BudgetStatus;
 }
 
 interface BudgetDTO {
@@ -25,6 +28,7 @@ export class Budget {
       items: props.items ?? [],
       taxes: props.taxes ?? [],
       discounts: props.discounts ?? [],
+      status: new Pending(),
     };
   }
 
@@ -45,17 +49,14 @@ export class Budget {
     this.props.discounts.push(discount);
   }
 
+  public set status(budgetStatus: BudgetStatus) {
+    this.props.status = budgetStatus;
+  }
+
   public get totalValue(): number {
     this.checkDiscount();
     const totalValue =
       this.value + this.calculateTotalTaxes() - this.calculateTotalDiscounts();
-    console.log();
-    this.printItems();
-    console.log();
-    this.printTaxes();
-    console.log();
-    this.printDiscounts();
-    console.log();
     return totalValue;
   }
 
@@ -71,14 +72,9 @@ export class Budget {
   }
 
   private calculateTotalDiscounts() {
-    return this.props.discounts.reduce(
-      (acc, discount) =>
-        acc +
-        discount.calculateDiscountValue({
-          budgetValue: this.value,
-        }),
-      0
-    );
+    return this.props.discounts.reduce((acc, discount) => {
+      return acc + discount.calculateDiscountValue({ budgetValue: this.value - acc });
+    }, 0);
   }
 
   private checkDiscount() {
@@ -135,5 +131,21 @@ export class Budget {
 
       console.log(`🟢 Desconto de ${formatCurrency(discount.value)}`);
     });
+  }
+
+  public applyExtraDiscount() {
+    this.props.status.applyDiscount(this);
+  }
+
+  public approve() {
+    this.props.status.approve(this);
+  }
+
+  public disapprove() {
+    this.props.status.disapprove(this);
+  }
+
+  public finalize() {
+    this.props.status.finalize(this);
   }
 }

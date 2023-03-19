@@ -1,5 +1,4 @@
 import { Budget } from './entities/Budget';
-import { ICMS } from './entities/ICMS';
 import { Item } from './entities/Item';
 import { formatCurrency } from './utils/formatCurrency';
 
@@ -20,11 +19,19 @@ async function app() {
   const budget = new Budget({});
   budget.addItem(new Item({ desc: 'Caneta', value: 200 }));
   budget.addItem(new Item({ desc: 'Borracha', value: 100 }));
-  budget.addItem(new Item({ desc: 'Lápis', value: 300 }));
-  budget.addTax(new ICMS({ aliquot: 10 }));
+  budget.addItem(new Item({ desc: 'Lápis', value: 200 }));
 
-  console.log(`💲 Valor Inicial: ${formatCurrency(budget.value)}`);
-  console.log(`💸 Valor Final: ${formatCurrency(budget.totalValue)}`);
+  budget.applyExtraDiscount();
+  console.log(formatCurrency(budget.totalValue));
+  budget.approve();
+
+  budget.applyExtraDiscount();
+  console.log(formatCurrency(budget.totalValue));
+
+  budget.finalize();
+
+  budget.applyExtraDiscount();
+  budget.approve();
 }
 
 app();
